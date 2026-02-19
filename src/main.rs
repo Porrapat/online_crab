@@ -36,15 +36,26 @@ async fn ws_route(
 
     actix_web::rt::spawn(async move {
         if is_admin {
-            // 🔥 ส่ง snapshot ทันที
             let current = state_clone.client_count.load(Ordering::SeqCst);
             let _ = session.text(current.to_string()).await;
 
             let mut rx = state_clone.tx.subscribe();
 
-            while let Ok(count) = rx.recv().await {
-                if session.text(count.to_string()).await.is_err() {
-                    break;
+            loop {
+                tokio::select! {
+                    Ok(count) = rx.recv() => {
+                        if session.text(count.to_string()).await.is_err() {
+                            break;
+                        }
+                    }
+
+                    Some(Ok(msg)) = msg_stream.next() => {
+                        if let Message::Close(_) = msg {
+                            break;
+                        }
+                    }
+
+                    else => break,
                 }
             }
         } else {
@@ -55,10 +66,11 @@ async fn ws_route(
             println!("client connected -> {}", new);
 
             // รอจนกว่าจะ disconnect
-            while let Some(Ok(msg)) = msg_stream.next().await {
-                match msg {
-                    Message::Close(_) => break,
-                    _ => {}
+            while let Some(result) = msg_stream.next().await {
+                match result {
+                    Ok(Message::Close(_)) => break,
+                    Ok(_) => {}
+                    Err(_) => break, // 🔥 stream error = disconnect
                 }
             }
 
