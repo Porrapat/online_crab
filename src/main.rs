@@ -37,6 +37,10 @@ impl Actor for WsSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         if self.is_admin {
+            // 🔥 send current now
+            let current = self.state.client_count.load(Ordering::SeqCst);
+            ctx.text(current.to_string());
+
             // subscribe broadcast
             let mut rx = self.state.tx.subscribe();
             let addr = ctx.address();
