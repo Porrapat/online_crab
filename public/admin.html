@@ -3,18 +3,22 @@
 <body>
 <h1>
   Online Clients:
+  <span id="loading">Loading...</span>
   <span id="count" style="display:none;"></span>
 </h1>
 
 <script>
-const el = document.getElementById("count");
+const loading = document.getElementById("loading");
+const count = document.getElementById("count");
 
 const ws = new WebSocket("ws://localhost:3000/ws?role=admin");
 
 ws.onmessage = (e) => {
-  el.textContent = e.data;
-  el.style.display = "inline"; // 🔥 แสดงก็ต่อเมื่อมีค่าจริง
+  count.textContent = e.data;
+  loading.style.display = "none";
+  count.style.display = "inline";
 };
 </script>
+
 </body>
 </html>
