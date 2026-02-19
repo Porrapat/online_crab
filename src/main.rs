@@ -1,10 +1,6 @@
-use actix::{Actor, AsyncContext, StreamHandler};
-use actix_web::{
-    get,
-    web::{self, Data, Query},
-    App, Error, HttpRequest, HttpResponse, HttpServer,
-};
-use actix_web_actors::ws;
+use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer};
+use actix_ws::{Message};
+use futures_util::StreamExt;
 use serde::Deserialize;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -20,106 +16,61 @@ struct AppState {
 
 #[derive(Deserialize)]
 struct WsQuery {
-    role: Option<String>, // admin | client
+    role: Option<String>,
 }
-
-/* =========================
-   WebSocket Session Actor
-========================= */
-
-struct WsSession {
-    is_admin: bool,
-    state: AppState,
-}
-
-impl Actor for WsSession {
-    type Context = ws::WebsocketContext<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        if self.is_admin {
-            // 🔥 send current now
-            let current = self.state.client_count.load(Ordering::SeqCst);
-            ctx.text(current.to_string());
-
-            // subscribe broadcast
-            let mut rx = self.state.tx.subscribe();
-            let addr = ctx.address();
-
-            actix_rt::spawn(async move {
-                while let Ok(count) = rx.recv().await {
-                    addr.do_send(AdminCount(count));
-                }
-            });
-        } else {
-            // client connect
-            let new = self.state.client_count.fetch_add(1, Ordering::SeqCst) + 1;
-            let _ = self.state.tx.send(new);
-            println!("client connected -> {}", new);
-        }
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        if !self.is_admin {
-            let new = self.state.client_count.fetch_sub(1, Ordering::SeqCst) - 1;
-            let _ = self.state.tx.send(new);
-            println!("client disconnected -> {}", new);
-        }
-    }
-}
-
-/* =========================
-   Admin receive count msg
-========================= */
-
-struct AdminCount(usize);
-
-impl actix::Message for AdminCount {
-    type Result = ();
-}
-
-impl actix::Handler<AdminCount> for WsSession {
-    type Result = ();
-
-    fn handle(&mut self, msg: AdminCount, ctx: &mut Self::Context) {
-        ctx.text(msg.0.to_string());
-    }
-}
-
-/* =========================
-   Handle incoming WS msgs
-========================= */
-
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
-    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
-        // ignore incoming messages (MVP)
-    }
-}
-
-/* =========================
-   Route handler
-========================= */
 
 #[get("/ws")]
 async fn ws_route(
     req: HttpRequest,
-    stream: web::Payload,
-    query: Query<WsQuery>,
-    state: Data<AppState>,
-) -> Result<HttpResponse, Error> {
+    body: web::Payload,
+    state: web::Data<AppState>,
+    query: web::Query<WsQuery>,
+) -> HttpResponse {
+    let (response, mut session, mut msg_stream) =
+        actix_ws::handle(&req, body).unwrap();
+
     let role = query.role.clone().unwrap_or("client".into());
     let is_admin = role == "admin";
 
-    let session = WsSession {
-        is_admin,
-        state: state.get_ref().clone(),
-    };
+    let state_clone = state.get_ref().clone();
 
-    ws::start(session, &req, stream)
+    actix_web::rt::spawn(async move {
+        if is_admin {
+            // 🔥 ส่ง snapshot ทันที
+            let current = state_clone.client_count.load(Ordering::SeqCst);
+            let _ = session.text(current.to_string()).await;
+
+            let mut rx = state_clone.tx.subscribe();
+
+            while let Ok(count) = rx.recv().await {
+                if session.text(count.to_string()).await.is_err() {
+                    break;
+                }
+            }
+        } else {
+            // client connect
+            let new = state_clone.client_count.fetch_add(1, Ordering::SeqCst) + 1;
+            let _ = state_clone.tx.send(new);
+
+            println!("client connected -> {}", new);
+
+            // รอจนกว่าจะ disconnect
+            while let Some(Ok(msg)) = msg_stream.next().await {
+                match msg {
+                    Message::Close(_) => break,
+                    _ => {}
+                }
+            }
+
+            let new = state_clone.client_count.fetch_sub(1, Ordering::SeqCst) - 1;
+            let _ = state_clone.tx.send(new);
+
+            println!("client disconnected -> {}", new);
+        }
+    });
+
+    response
 }
-
-/* =========================
-   Main
-========================= */
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -134,7 +85,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(state.clone()))
+            .app_data(web::Data::new(state.clone()))
             .service(ws_route)
     })
     .bind(("127.0.0.1", 3000))?
