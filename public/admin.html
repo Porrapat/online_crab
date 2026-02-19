@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Online Clients: <span id="count">0</span></h1>
+
+<script>
+const el = document.getElementById("count");
+const ws = new WebSocket("ws://localhost:3000/ws?role=admin");
+
+ws.onmessage = (e) => {
+  el.textContent = e.data;
+};
+</script>
+</body>
+</html>
