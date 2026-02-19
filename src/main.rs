@@ -1,17 +1,17 @@
 use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer};
-use actix_ws::{Message};
+use actix_ws::Message;
 use futures_util::StreamExt;
 use serde::Deserialize;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use tokio::sync::broadcast;
+use tokio::sync::watch;
 
 #[derive(Clone)]
 struct AppState {
     client_count: Arc<AtomicUsize>,
-    tx: broadcast::Sender<usize>,
+    tx: watch::Sender<usize>,
 }
 
 #[derive(Deserialize)]
@@ -36,14 +36,16 @@ async fn ws_route(
 
     actix_web::rt::spawn(async move {
         if is_admin {
-            let current = state_clone.client_count.load(Ordering::SeqCst);
-            let _ = session.text(current.to_string()).await;
-
             let mut rx = state_clone.tx.subscribe();
+
+            // 🔥 ส่ง snapshot ล่าสุดทันที
+            let current = *rx.borrow();
+            let _ = session.text(current.to_string()).await;
 
             loop {
                 tokio::select! {
-                    Ok(count) = rx.recv() => {
+                    _ = rx.changed() => {
+                        let count = *rx.borrow();
                         if session.text(count.to_string()).await.is_err() {
                             break;
                         }
@@ -59,24 +61,35 @@ async fn ws_route(
                 }
             }
         } else {
-            // client connect
-            let new = state_clone.client_count.fetch_add(1, Ordering::SeqCst) + 1;
-            let _ = state_clone.tx.send(new);
+            // ====================
+            // CLIENT CONNECT
+            // ====================
+            let new = state_clone
+                .client_count
+                .fetch_add(1, Ordering::SeqCst) + 1;
 
+            let _ = state_clone.tx.send(new);
             println!("client connected -> {}", new);
 
-            // รอจนกว่าจะ disconnect
+            // ====================
+            // WAIT FOR DISCONNECT
+            // ====================
             while let Some(result) = msg_stream.next().await {
                 match result {
                     Ok(Message::Close(_)) => break,
                     Ok(_) => {}
-                    Err(_) => break, // 🔥 stream error = disconnect
+                    Err(_) => break,
                 }
             }
 
-            let new = state_clone.client_count.fetch_sub(1, Ordering::SeqCst) - 1;
-            let _ = state_clone.tx.send(new);
+            // ====================
+            // CLIENT DISCONNECT
+            // ====================
+            let new = state_clone
+                .client_count
+                .fetch_sub(1, Ordering::SeqCst) - 1;
 
+            let _ = state_clone.tx.send(new);
             println!("client disconnected -> {}", new);
         }
     });
@@ -86,7 +99,8 @@ async fn ws_route(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let (tx, _) = broadcast::channel(100);
+    // 🔥 watch channel แทน broadcast
+    let (tx, _) = watch::channel(0usize);
 
     let state = AppState {
         client_count: Arc::new(AtomicUsize::new(0)),
