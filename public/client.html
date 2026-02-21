@@ -15,9 +15,9 @@ const loading = document.getElementById("loading");
 const count = document.getElementById("count");
 
 ws.onmessage = (event) => {
-    count.textContent = event.data;
-    loading.style.display = "none";
-    count.style.display = "inline";
+  count.textContent = event.data;
+  loading.style.display = "none";
+  count.style.display = "inline";
 };
 </script>
 
