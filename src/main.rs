@@ -9,6 +9,8 @@ use std::sync::{
 use tokio::sync::watch;
 use std::env;
 use dotenvy::dotenv;
+use tracing_subscriber::{EnvFilter};
+use tracing::info;
 
 #[derive(Clone)]
 struct AppState {
@@ -73,7 +75,7 @@ async fn ws_route(
                 .fetch_add(1, Ordering::SeqCst) + 1;
 
             let _ = state_clone.tx.send(new);
-            println!("client connected -> {}", new);
+            info!("client connected -> {}", new);
 
             // ====================
             // 🔥 DISCONNECT GUARD
@@ -89,7 +91,7 @@ async fn ws_route(
                         .fetch_sub(1, Ordering::SeqCst) - 1;
 
                     let _ = self.state.tx.send(new);
-                    println!("client disconnected -> {}", new);
+                    info!("client disconnected -> {}", new);
                 }
             }
 
@@ -141,6 +143,13 @@ async fn ws_route(
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info"))
+        )
+        .init();
+
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
     let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "3000".into())
@@ -154,7 +163,7 @@ async fn main() -> std::io::Result<()> {
         tx,
     };
 
-    println!("Server running http://{}:{}", host, port);
+    info!("Server running http://{}:{}", host, port);
 
     HttpServer::new(move || {
         App::new()
