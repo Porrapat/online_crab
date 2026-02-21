@@ -5,6 +5,6 @@ export default function () {
     socket.on('open', function () {});
     socket.setTimeout(function () {
       socket.close();
-    }, 60000);
+    }, 30000);
   });
 }
