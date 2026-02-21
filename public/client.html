@@ -3,8 +3,23 @@
 <body>
 <h1>Client Page</h1>
 
+<p>Online: 
+  <span id="loading">Loading...</span>
+  <span id="count" style="display:none;"></span>
+</p>
+
 <script>
 const ws = new WebSocket("ws://localhost:3000/ws?role=client");
+
+const loading = document.getElementById("loading");
+const count = document.getElementById("count");
+
+ws.onmessage = (event) => {
+    count.textContent = event.data;
+    loading.style.display = "none";
+    count.style.display = "inline";
+};
 </script>
+
 </body>
 </html>

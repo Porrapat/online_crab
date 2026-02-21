@@ -61,6 +61,8 @@ async fn ws_route(
                 }
             }
         } else {
+            let mut rx = state_clone.tx.subscribe();
+
             // ====================
             // CLIENT CONNECT
             // ====================
@@ -72,25 +74,61 @@ async fn ws_route(
             println!("client connected -> {}", new);
 
             // ====================
-            // WAIT FOR DISCONNECT
+            // 🔥 DISCONNECT GUARD
             // ====================
-            while let Some(result) = msg_stream.next().await {
-                match result {
-                    Ok(Message::Close(_)) => break,
-                    Ok(_) => {}
-                    Err(_) => break,
+            struct DisconnectGuard {
+                state: AppState,
+            }
+
+            impl Drop for DisconnectGuard {
+                fn drop(&mut self) {
+                    let new = self.state
+                        .client_count
+                        .fetch_sub(1, Ordering::SeqCst) - 1;
+
+                    let _ = self.state.tx.send(new);
+                    println!("client disconnected -> {}", new);
                 }
             }
 
-            // ====================
-            // CLIENT DISCONNECT
-            // ====================
-            let new = state_clone
-                .client_count
-                .fetch_sub(1, Ordering::SeqCst) - 1;
+            let _guard = DisconnectGuard {
+                state: state_clone.clone(),
+            };
 
-            let _ = state_clone.tx.send(new);
-            println!("client disconnected -> {}", new);
+            // ====================
+            // SEND SNAPSHOT ทันที
+            // ====================
+            let current = *rx.borrow();
+            let _ = session.text(current.to_string()).await;
+
+            // ====================
+            // LOOP รอ event
+            // ====================
+            loop {
+                tokio::select! {
+
+                    // broadcast update
+                    _ = rx.changed() => {
+                        let count = *rx.borrow();
+                        if session.text(count.to_string()).await.is_err() {
+                            break;
+                        }
+                    }
+
+                    // ถ้า stream จบ = disconnect
+                    msg = msg_stream.next() => {
+                        match msg {
+                            Some(Ok(Message::Close(_))) => break,
+                            Some(Ok(_)) => {}
+                            Some(Err(_)) => break,
+                            None => break,
+                        }
+                    }
+                }
+            }
+
+            // 🔥 ไม่ต้องเขียน decrement ตรงนี้แล้ว
+            // เพราะ Drop guard จะทำงานอัตโนมัติ
         }
     });
 
