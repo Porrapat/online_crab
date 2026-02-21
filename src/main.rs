@@ -11,6 +11,7 @@ use std::env;
 use dotenvy::dotenv;
 use tracing_subscriber::{EnvFilter};
 use tracing::info;
+use actix_files::Files;
 
 #[derive(Clone)]
 struct AppState {
@@ -168,6 +169,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
+            .service(Files::new("/static", "./static"))
             .service(ws_route)
     })
     .bind((host.as_str(), port))?
