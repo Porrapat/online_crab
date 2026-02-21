@@ -20,13 +20,13 @@
         bottom: 20px;
         right: 20px;
         width: 120px;
-        background: #111;
+        background: #018822;
         color: #fff;
         border-radius: 12px;
         padding: 12px;
         font-family: Arial, sans-serif;
         text-align: center;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        box-shadow: 0 8px 25px rgba(51, 255, 0, 0.9);
         z-index: 99999;
       }
       #online-popup .online-header {
