@@ -7,6 +7,8 @@ use std::sync::{
     Arc,
 };
 use tokio::sync::watch;
+use std::env;
+use dotenvy::dotenv;
 
 #[derive(Clone)]
 struct AppState {
@@ -137,7 +139,14 @@ async fn ws_route(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // 🔥 watch channel แทน broadcast
+    dotenv().ok();
+
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".into());
+    let port: u16 = env::var("PORT")
+        .unwrap_or_else(|_| "3000".into())
+        .parse()
+        .expect("PORT must be a number");
+
     let (tx, _) = watch::channel(0usize);
 
     let state = AppState {
@@ -145,14 +154,14 @@ async fn main() -> std::io::Result<()> {
         tx,
     };
 
-    println!("Server running http://127.0.0.1:3000");
+    println!("Server running http://{}:{}", host, port);
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
             .service(ws_route)
     })
-    .bind(("127.0.0.1", 3000))?
+    .bind((host.as_str(), port))?
     .run()
     .await
 }
