@@ -4,6 +4,8 @@
     (script && script.dataset.ws) ||
     "ws://localhost:3000/ws?role=client";
 
+  const hidden = script && script.dataset.hidden === "true";
+
   function createPopup() {
     const box = document.createElement("div");
     box.id = "online-popup";
@@ -47,19 +49,31 @@
   }
 
   function init() {
-    const countEl = createPopup();
     const ws = new WebSocket(wsUrl);
 
+    let countEl = null;
+
+    // 🔥 ถ้าไม่ hidden ค่อยสร้าง popup
+    if (!hidden) {
+      countEl = createPopup();
+    }
+
     ws.onmessage = (event) => {
+      if (countEl) {
       countEl.textContent = event.data;
+      }
     };
 
     ws.onerror = () => {
+      if (countEl) {
       countEl.textContent = "Error";
+      }
     };
 
     ws.onclose = () => {
+      if (countEl) {
       countEl.textContent = "Offline";
+      }
     };
   }
 
