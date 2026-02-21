@@ -12,6 +12,11 @@ channels.
 
 ------------------------------------------------------------------------
 
+## 🚀 Installation
+-   Make sure you have .env file please copy it from .env.example
+
+------------------------------------------------------------------------
+
 ## 🚀 Features
 
 -   Real-time online client counter
