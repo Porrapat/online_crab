@@ -1,5 +1,5 @@
 (function () {
-  const script = document.querySelector('script[src*="online-count.js"]');
+  const script = document.querySelector('script[src*="online-crab.js"]');
   const wsUrl =
     (script && script.dataset.ws) ||
     "ws://localhost:3000/ws?role=client";
@@ -12,7 +12,7 @@
 
     box.innerHTML = `
       <div class="online-header">Online</div>
-      <div class="online-count">Loading...</div>
+      <div class="online-crab">Loading...</div>
     `;
 
     const style = document.createElement("style");
@@ -35,7 +35,7 @@
         font-size: 12px;
         opacity: 0.7;
       }
-      #online-popup .online-count {
+      #online-popup .online-crab {
         font-size: 22px;
         font-weight: bold;
         margin-top: 4px;
@@ -45,7 +45,7 @@
     document.head.appendChild(style);
     document.body.appendChild(box);
 
-    return box.querySelector(".online-count");
+    return box.querySelector(".online-crab");
   }
 
   function init() {
