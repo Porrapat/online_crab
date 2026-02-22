@@ -129,7 +129,7 @@ async fn ws_route(
                             break;
                         }
 
-                        if session.ping(b"ping").await.is_err() {
+                        if session.ping(&[]).await.is_err() {
                             break;
                         }
                     }
