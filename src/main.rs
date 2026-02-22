@@ -46,7 +46,7 @@ async fn ws_route(
         if is_admin {
             let mut rx = state_clone.tx.subscribe();
 
-            // 🔥 ส่ง snapshot ล่าสุดทันที
+            // 🔥 Send the latest snapshot immediately
             let current = *rx.borrow();
             let _ = session.text(current.to_string()).await;
 
@@ -158,8 +158,8 @@ async fn ws_route(
                 }
             }
 
-            // 🔥 ไม่ต้องเขียน decrement ตรงนี้แล้ว
-            // เพราะ Drop guard จะทำงานอัตโนมัติ
+            // No need to manually decrement here.
+            // The Drop guard will handle it automatically.
         }
     });
 

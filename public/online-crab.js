@@ -61,7 +61,7 @@
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
 
-      // ถ้าถึง max แล้ว และยังต่อไม่ได้ → หยุดเลย
+      // If the maximum delay has been reached and the connection still fails, stop retrying.
       if (reconnectDelay >= maxDelay) {
         stopped = true;
         console.log("Reconnect stopped permanently");
