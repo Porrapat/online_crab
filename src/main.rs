@@ -13,6 +13,9 @@ use tracing_subscriber::{EnvFilter};
 use tracing::info;
 use actix_files::Files;
 
+use tokio::time::{interval, Duration};
+use std::time::Instant;
+
 #[derive(Clone)]
 struct AppState {
     client_count: Arc<AtomicUsize>,
@@ -106,11 +109,30 @@ async fn ws_route(
             let current = *rx.borrow();
             let _ = session.text(current.to_string()).await;
 
+
+            // =========================
+            // 🔥 HEARTBEAT SETUP
+            // =========================
+            let mut heartbeat = interval(Duration::from_secs(25));
+            let mut last_pong = Instant::now();
+
             // ====================
             // LOOP รอ event
             // ====================
             loop {
                 tokio::select! {
+
+                    // 🔵 Heartbeat tick
+                    _ = heartbeat.tick() => {
+                        if last_pong.elapsed().as_secs() > 60 {
+                            info!("heartbeat timeout");
+                            break;
+                        }
+
+                        if session.ping(b"ping").await.is_err() {
+                            break;
+                        }
+                    }
 
                     // broadcast update
                     _ = rx.changed() => {
@@ -120,9 +142,12 @@ async fn ws_route(
                         }
                     }
 
-                    // ถ้า stream จบ = disconnect
+                    // 🔵 Incoming messages
                     msg = msg_stream.next() => {
                         match msg {
+                            Some(Ok(Message::Pong(_))) => {
+                                last_pong = Instant::now();
+                            }
                             Some(Ok(Message::Close(_))) => break,
                             Some(Ok(_)) => {}
                             Some(Err(_)) => break,
