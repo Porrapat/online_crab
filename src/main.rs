@@ -145,7 +145,8 @@ async fn ws_route(
                     // 🔵 Incoming messages
                     msg = msg_stream.next() => {
                         match msg {
-                            Some(Ok(Message::Pong(_))) => {
+                            Some(Ok(Message::Pong(payload))) => {
+                                info!("PONG RECEIVED: {:?}", payload);
                                 last_pong = Instant::now();
                             }
                             Some(Ok(Message::Close(_))) => break,
