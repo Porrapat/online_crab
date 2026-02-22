@@ -6,6 +6,12 @@
 
   const hidden = script && script.dataset.hidden === "true";
 
+  let ws = null;
+  let reconnectDelay = 1000;
+  const maxDelay = 30000;
+  let reconnectTimer = null;
+  let countEl = null;
+
   function createPopup() {
     const box = document.createElement("div");
     box.id = "online-popup";
@@ -48,33 +54,45 @@
     return box.querySelector(".online-crab");
   }
 
-  function init() {
-    const ws = new WebSocket(wsUrl);
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
 
-    let countEl = null;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      reconnectDelay = Math.min(reconnectDelay * 2, maxDelay);
+      connect();
+    }, reconnectDelay);
+  }
 
-    // 🔥 ถ้าไม่ hidden ค่อยสร้าง popup
-    if (!hidden) {
-      countEl = createPopup();
-    }
+  function connect() {
+    if (ws && ws.readyState === WebSocket.OPEN) return;
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      reconnectDelay = 1000;
+      if (countEl) countEl.textContent = "Connected";
+    };
 
     ws.onmessage = (event) => {
-      if (countEl) {
-      countEl.textContent = event.data;
-      }
+      if (countEl) countEl.textContent = event.data;
     };
 
     ws.onerror = () => {
-      if (countEl) {
-      countEl.textContent = "Error";
-      }
+      ws.close();
     };
 
     ws.onclose = () => {
-      if (countEl) {
-      countEl.textContent = "Offline";
-      }
+      if (countEl) countEl.textContent = "Offline";
+      scheduleReconnect();
     };
+  }
+
+  function init() {
+    if (!hidden) {
+      countEl = createPopup();
+    }
+    connect();
   }
 
   if (document.readyState === "loading") {
