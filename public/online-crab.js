@@ -10,6 +10,7 @@
   let reconnectDelay = 1000;
   const maxDelay = 30000;
   let reconnectTimer = null;
+  let stopped = false;
   let countEl = null;
 
   function createPopup() {
@@ -55,12 +56,22 @@
   }
 
   function scheduleReconnect() {
-    if (reconnectTimer) return;
+    if (reconnectTimer || stopped) return;
 
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
+
+      // ถ้าถึง max แล้ว และยังต่อไม่ได้ → หยุดเลย
+      if (reconnectDelay >= maxDelay) {
+        stopped = true;
+        console.log("Reconnect stopped permanently");
+        if (countEl) countEl.textContent = "Offline";
+        return;
+      }
+
       reconnectDelay = Math.min(reconnectDelay * 2, maxDelay);
       connect();
+
     }, reconnectDelay);
   }
 
