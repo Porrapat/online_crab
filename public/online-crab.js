@@ -66,7 +66,13 @@
   }
 
   function connect() {
-    if (ws && ws.readyState === WebSocket.OPEN) return;
+    if (
+      ws &&
+      (ws.readyState === WebSocket.OPEN ||
+      ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
 
     ws = new WebSocket(wsUrl);
 
@@ -88,6 +94,18 @@
       scheduleReconnect();
     };
   }
+
+  window.addEventListener("online", () => {
+    reconnectDelay = 1000;
+    connect();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      reconnectDelay = 1000;
+      connect();
+    }
+  });
 
   function init() {
     if (!hidden) {
