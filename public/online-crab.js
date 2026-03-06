@@ -46,6 +46,31 @@
         font-weight: bold;
         margin-top: 4px;
       }
+      
+      /* Responsive design for small screens */
+      @media (max-width: 768px) {
+        #online-popup {
+          left: 50%;
+          right: auto;
+          transform: translateX(-50%);
+          bottom: 20px;
+        }
+      }
+      
+      /* Even smaller screens (mobile phones) */
+      @media (max-width: 480px) {
+        #online-popup {
+          bottom: 15px;
+          width: 100px;
+          padding: 10px;
+        }
+        #online-popup .online-header {
+          font-size: 11px;
+        }
+        #online-popup .online-crab {
+          font-size: 20px;
+        }
+      }
     `;
 
     document.head.appendChild(style);
