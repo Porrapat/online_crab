@@ -1,13 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client Page</title>
+  <title>Online Crab - Client (Silent Mode)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .client-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 50px 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .logo {
+      font-size: 72px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .welcome-title {
+      color: #1e293b;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 16px;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+      }
+    }
+
+    .footer-text {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .client-container {
+        padding: 40px 25px;
+      }
+
+      .welcome-title {
+        font-size: 26px;
+      }
+
+      .logo {
+        font-size: 56px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>Client Page</h1>
+  <div class="client-container">
+    <div class="logo">🦀</div>
+    <h1 class="welcome-title">Welcome to Online Crab</h1>
+    <p class="subtitle">You're connected to the real-time monitoring system</p>
+    <p class="footer-text">© 2026 Online Crab Monitoring System</p>
+  </div>
+
   <script src="online-crab.js" data-ws="ws://localhost:3000/ws?role=client" data-hidden="true"></script>
 </body>
 </html>
-
