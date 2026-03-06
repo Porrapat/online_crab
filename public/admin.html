@@ -1,29 +1,305 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Page</title>
+  <title>Admin Dashboard - Online Crab</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .dashboard-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .stats-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      color: white;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .stats-label {
+      font-size: 16px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stats-value {
+      font-size: 64px;
+      font-weight: bold;
+      line-height: 1;
+      margin: 10px 0;
+      transition: all 0.3s ease;
+    }
+
+    .stats-value.animate {
+      animation: numberChange 0.6s ease;
+    }
+
+    @keyframes numberChange {
+      0% {
+        transform: scale(1);
+      }
+      25% {
+        transform: scale(1.2);
+        color: #fbbf24;
+      }
+      50% {
+        transform: scale(0.9);
+      }
+      75% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+        color: white;
+      }
+    }
+
+    .stats-loading {
+      font-size: 18px;
+      opacity: 0.8;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .info-section {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .info-value {
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .dashboard-container {
+        padding: 25px;
+      }
+
+      .title {
+        font-size: 24px;
+      }
+
+      .stats-value {
+        font-size: 48px;
+      }
+
+      .logo {
+        font-size: 36px;
+      }
+    }
+  </style>
 </head>
 <body>
-<h1>
-  Online Clients:
-  <span id="loading">Loading...</span>
-  <span id="count" style="display:none;"></span>
-</h1>
+  <div class="dashboard-container">
+    <div class="header">
+      <div class="logo">🦀</div>
+      <h1 class="title">Admin Dashboard</h1>
+      <p class="subtitle">Real-time Client Monitoring</p>
+    </div>
 
-<script>
-const loading = document.getElementById("loading");
-const count = document.getElementById("count");
+    <div class="stats-card">
+      <div class="stats-label">Online Clients</div>
+      <div id="loading" class="stats-loading">Connecting...</div>
+      <div id="count" class="stats-value" style="display:none;"></div>
+      <div id="status" style="display:none;">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span>Connected</span>
+        </div>
+      </div>
+    </div>
 
-const ws = new WebSocket("ws://localhost:3000/ws?role=admin");
+    <div class="info-section">
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value" id="connection-status">Initializing...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Server</span>
+        <span class="info-value">localhost:3000</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Last Update</span>
+        <span class="info-value" id="last-update">-</span>
+      </div>
+    </div>
 
-ws.onmessage = (e) => {
-  count.textContent = e.data;
-  loading.style.display = "none";
-  count.style.display = "inline";
-};
-</script>
+    <div class="footer">
+      <p>© 2026 Online Crab Monitoring System</p>
+    </div>
+  </div>
 
+  <script>
+    const loading = document.getElementById("loading");
+    const count = document.getElementById("count");
+    const status = document.getElementById("status");
+    const connectionStatus = document.getElementById("connection-status");
+    const lastUpdate = document.getElementById("last-update");
+    
+    let previousValue = null;
+
+    const ws = new WebSocket("ws://localhost:3000/ws?role=admin");
+
+    ws.onopen = () => {
+      connectionStatus.textContent = "Connected";
+      connectionStatus.style.color = "#4ade80";
+    };
+
+    ws.onmessage = (e) => {
+      const newValue = e.data;
+      
+      // Trigger animation if value changed
+      if (previousValue !== null && previousValue !== newValue) {
+        count.classList.remove("animate");
+        // Force reflow to restart animation
+        void count.offsetWidth;
+        count.classList.add("animate");
+      }
+      
+      count.textContent = newValue;
+      previousValue = newValue;
+      loading.style.display = "none";
+      count.style.display = "block";
+      status.style.display = "block";
+      connectionStatus.textContent = "Active";
+      connectionStatus.style.color = "#4ade80";
+      
+      // Update last update time
+      const now = new Date();
+      lastUpdate.textContent = now.toLocaleTimeString();
+    };
+
+    ws.onerror = () => {
+      connectionStatus.textContent = "Error";
+      connectionStatus.style.color = "#ef4444";
+    };
+
+    ws.onclose = () => {
+      connectionStatus.textContent = "Disconnected";
+      connectionStatus.style.color = "#ef4444";
+      loading.textContent = "Reconnecting...";
+      loading.style.display = "block";
+      count.style.display = "none";
+      status.style.display = "none";
+    };
+  </script>
 </body>
 </html>
